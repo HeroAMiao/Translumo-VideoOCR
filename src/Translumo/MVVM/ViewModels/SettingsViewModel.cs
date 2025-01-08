@@ -41,7 +41,7 @@ namespace Translumo.MVVM.ViewModels
         private bool _additionalPanelOpened;
 
         public SettingsViewModel(DialogService dialogService, AppearanceSettingsViewModel appearanceVm, OcrSettingsViewModel ocrVm, 
-            LanguagesSettingsViewModel languagesVm, HotkeysSettingsViewModel hotkeysVm, SystemConfiguration systemConfiguration, ILogger<SettingsViewModel> logger)
+            LanguagesSettingsViewModel languagesVm, HotkeysSettingsViewModel hotkeysVm, VideoOcrViewModel videoOcrViewModel,SystemConfiguration systemConfiguration, ILogger<SettingsViewModel> logger)
         {
             this.NavigationItems = new ObservableCollection<BaseNavigationItem>();
             this.DialogService = dialogService;
@@ -55,6 +55,7 @@ namespace Translumo.MVVM.ViewModels
             AddNavigationItem(LocalizationManager.GetValue("Str.Navigation.Appearance", false, OnLocalizedValueChanged, this), PackIconKind.PaletteOutline, appearanceVm);
             AddNavigationItem(LocalizationManager.GetValue("Str.Navigation.Ocr", false, OnLocalizedValueChanged, this), PackIconKind.Ocr, ocrVm);
             AddNavigationItem(LocalizationManager.GetValue("Str.Navigation.HotKeys", false, OnLocalizedValueChanged, this), PackIconKind.KeyboardSettingsOutline, hotkeysVm);
+            AddNavigationItem(LocalizationManager.GetValue("Str.Navigation.VideoOcr", false, OnLocalizedValueChanged, this), PackIconKind.Ocr, videoOcrViewModel);
         }
 
         private void OnLocalizedValueChanged(string key, string oldValue)

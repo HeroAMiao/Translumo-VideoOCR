@@ -35,6 +35,9 @@
         <DataTemplate DataType="{x:Type viewModels:OcrSettingsViewModel}">
             <views:OcrSettingsView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:VideoOcrViewModel}">
+            <views:VideoOcrView />
+        </DataTemplate>
         <common:CaseConverter x:Key="CaseConverter" Case="Upper"></common:CaseConverter>
         <common:BoolBrushConverter x:Key="HasUpdatesConverter" TrueBrush="{StaticResource WarningBrush}" FalseBrush="{StaticResource PrimaryHueLightBrush}"/>
         <system:Boolean x:Key="ConfirmationClose">True</system:Boolean>

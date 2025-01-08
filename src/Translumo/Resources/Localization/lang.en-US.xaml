@@ -93,6 +93,7 @@
     <system:String x:Key="Str.Navigation.Appearance">Appearance</system:String>
     <system:String x:Key="Str.Navigation.Ocr">Text recognition</system:String>
     <system:String x:Key="Str.Navigation.HotKeys">Hotkeys</system:String>
+    <system:String x:Key="Str.Navigation.VideoOcr">Video OCR</system:String>
 
     <!--Languages-->
     <system:String x:Key="Str.Languages.English">English</system:String>
