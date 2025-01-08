@@ -5,11 +5,13 @@ setlocal EnableDelayedExpansion
 set "componentsPath=%~dp0ext_components"
 
 if NOT exist %componentsPath% (
-	powershell Invoke-WebRequest https://github.com/Danily07/Translumo/releases/download/v.0.8.5/_Components-v.0.8.0.zip -OutFile components.zip
+	powershell Invoke-WebRequest https://github.com/Danily07/Translumo/releases/download/v.0.8.5/_Components-v.0.8.0.zip -OutFile "%~dp0components.zip"
 	powershell Expand-Archive "%~dp0components.zip" -DestinationPath !componentsPath!
 	del "%~dp0components.zip"
 )
 
+ 
+ren "%componentsPath%\models\tesseract" tessdata
 set "targetPaths[0]=%1python\"
 set "targetPaths[1]=%1models\easyocr\"
 set "targetPaths[2]=%1models\tessdata\"
