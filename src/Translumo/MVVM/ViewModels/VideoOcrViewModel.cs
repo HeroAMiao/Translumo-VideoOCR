@@ -11,15 +11,8 @@ namespace Translumo.MVVM.ViewModels
         private string _path = "no path";
         public string Path
         {
-            get
-            {
-                return _path;
-            }
-            set
-            {
-                _path = value;
-                OnPropertyChanged();
-            }
+            get => _path;
+            set => SetProperty(ref _path, value);
         }
 
 
