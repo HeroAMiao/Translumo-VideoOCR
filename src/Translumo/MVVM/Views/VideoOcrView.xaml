@@ -20,11 +20,15 @@
         </Grid.ColumnDefinitions>
         <TextBox Text="{Binding Mode=TwoWay, Path = Path}"></TextBox>
         <Button Grid.Row="0" Grid.Column="1" Click="Browse_OnClick">Browse</Button>
-        <Button Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2">Load</Button>
+        <Button Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" Click="Load_OnClick">Load</Button>
         <Canvas Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"></Canvas>
         <Slider Grid.Row="3" Grid.Column="0"></Slider>
         <Viewbox Grid.Row="3" Grid.Column="1" Stretch="Uniform">
-            <TextBlock Text="{Binding Path=VideoTimeStamp, Mode=OneWay}"></TextBlock>
+            <TextBlock>
+                <Run Text="{Binding CurrentTime, Mode=OneWay, StringFormat=h\\:mm\\:ss}"></Run>
+                <Run>/</Run>
+                <Run Text="{Binding Duration, Mode=OneWay, StringFormat=h\\:mm\\:ss}"></Run>
+            </TextBlock>
         </Viewbox>
         
     </Grid>

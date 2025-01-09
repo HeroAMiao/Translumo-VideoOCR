@@ -22,6 +22,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Translumo.Processing", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Translumo.TTS", "src\Translumo.TTS\Translumo.TTS.csproj", "{03241C57-B380-45E9-92D6-2308A93DC0DB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Translumo.Video", "src\Translumo.Video\Translumo.Video.csproj", "{B07D172B-5B24-4CA9-9BBE-EA14F38EED01}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -56,6 +58,10 @@ Global
 		{03241C57-B380-45E9-92D6-2308A93DC0DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{03241C57-B380-45E9-92D6-2308A93DC0DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{03241C57-B380-45E9-92D6-2308A93DC0DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B07D172B-5B24-4CA9-9BBE-EA14F38EED01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B07D172B-5B24-4CA9-9BBE-EA14F38EED01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B07D172B-5B24-4CA9-9BBE-EA14F38EED01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B07D172B-5B24-4CA9-9BBE-EA14F38EED01}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

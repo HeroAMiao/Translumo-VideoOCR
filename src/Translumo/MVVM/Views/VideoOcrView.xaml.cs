@@ -30,5 +30,10 @@ namespace Translumo.MVVM.Views
                 ViewModel.Path = openFileDialog.FileName;
             }
         }
+
+        private void Load_OnClick(object sender, RoutedEventArgs e)
+        {
+            ViewModel.OnLoadClicked();
+        }
     }
 }

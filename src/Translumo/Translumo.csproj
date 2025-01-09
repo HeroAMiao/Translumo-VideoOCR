@@ -91,6 +91,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Translumo.Video\Translumo.Video.csproj" />
     <ProjectReference Include="..\Translumo.Processing\Translumo.Processing.csproj" />
   </ItemGroup>
 

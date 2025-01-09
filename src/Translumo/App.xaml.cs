@@ -31,6 +31,7 @@ using Translumo.Translation.Configuration;
 using Translumo.TTS;
 using Translumo.Update;
 using Translumo.Utils;
+using Translumo.Video;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Translumo
@@ -98,6 +99,8 @@ namespace Translumo
             services.AddScoped<LanguagesSettingsViewModel>();
             services.AddScoped<OcrSettingsViewModel>();
             services.AddScoped<VideoOcrViewModel>();
+
+            services.AddSingleton<IVideoPreviewService, FfmpegCoreVideoPreviewService>();
 
             var chatWindowConfiguration = ChatWindowConfiguration.Default;
             services.AddSingleton<OcrGeneralConfiguration>(OcrGeneralConfiguration.Default);
