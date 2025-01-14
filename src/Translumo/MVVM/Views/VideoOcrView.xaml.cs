@@ -1,11 +1,17 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 using Translumo.MVVM.ViewModels;
+using Translumo.Utils;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using Point = System.Windows.Point;
+using Size = System.Windows.Size;
 using UserControl = System.Windows.Controls.UserControl;
 
 namespace Translumo.MVVM.Views
@@ -112,5 +118,17 @@ namespace Translumo.MVVM.Views
         {
             ViewModel.PropertyChanged += ViewModelPropertyChanged;
         }
+
+        private void StartBtn_OnClick(object sender, RoutedEventArgs e)
+        {
+            var bitmap = ViewModel.PreviewBitmap;
+            var area = ViewModel.SelectedArea;
+            
+            var rectangle = ViewModel.CalculateChopRectangle(RectCanvas.ActualWidth, RectCanvas.ActualHeight);
+            var chopped = bitmap.Clone(rectangle, PixelFormat.Format24bppRgb);
+            var c = new BitmapToImageSourceConverter();
+            Preview.Source = (BitmapSource)c.Convert(chopped, typeof(BitmapSource), null, null);
+        }
+
     }
 }

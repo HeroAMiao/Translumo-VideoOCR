@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Translumo.Utils;
 using Translumo.Video;
 using MessageBox = System.Windows.Forms.MessageBox;
+using Point = System.Windows.Point;
 
 namespace Translumo.MVVM.ViewModels
 {
@@ -142,6 +143,40 @@ namespace Translumo.MVVM.ViewModels
                 old?.Dispose();
             }
             
+        }
+        
+        
+        public Rectangle CalculateChopRectangle(double width, double height)
+        {
+            var bitmap = _bitmap;
+            var area = SelectedArea;
+            Point bitmapDisplaySize;
+            if (bitmap.Width / (double)bitmap.Height < width / height)
+            {
+                //bitmap is thinner, padding is horizontal
+                bitmapDisplaySize = new Point(height / bitmap.Height * bitmap.Width, height);
+            }
+            else
+            {
+                //canvas is thinner, padding is vertical
+                bitmapDisplaySize = new Point(1, width / bitmap.Width * bitmap.Height);
+            }
+            var padding = new Point((width - bitmapDisplaySize.X) / 2, (height - bitmapDisplaySize.Y) / 2);
+            var rectXInBitmap = (area.Left - padding.X) / bitmapDisplaySize.X * bitmap.Width;
+            var rectYInBitmap = (area.Top - padding.Y) / bitmapDisplaySize.Y * bitmap.Height;
+            var rectWidthInBitmap = area.Width / bitmapDisplaySize.X * bitmap.Width;
+            var rectHeightInBitmap = area.Height / bitmapDisplaySize.Y * bitmap.Height;
+            
+            var finalX = (int)Math.Round(Math.Max(rectXInBitmap, 0));
+            var finalY = (int)Math.Round(Math.Max(rectYInBitmap, 0));
+            var rectangle = new Rectangle
+            {
+                X = finalX,
+                Y = finalY,
+                Width = (int)Math.Round(Math.Min(rectWidthInBitmap, bitmap.Width - finalX)),
+                Height = (int)Math.Round(Math.Min(rectHeightInBitmap, bitmap.Height - finalY)),
+            };
+            return rectangle;
         }
 
 
