@@ -2,11 +2,11 @@
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
-using System.Windows.Forms;
-using System.Windows.Media.Imaging;
+using System.Windows;
 using Microsoft.Extensions.Logging;
 using Translumo.Utils;
 using Translumo.Video;
+using MessageBox = System.Windows.Forms.MessageBox;
 
 namespace Translumo.MVVM.ViewModels
 {
@@ -34,7 +34,17 @@ namespace Translumo.MVVM.ViewModels
             get => _bitmap;
             set => SetProperty(ref _bitmap, value);
         }
-        
+
+        private Rect _selectedArea;
+        public Rect SelectedArea
+        {
+            get => _selectedArea;
+            set
+            {
+                SetProperty(ref _selectedArea, value);
+            }
+        }
+
 
         public int ProgressValue
         {

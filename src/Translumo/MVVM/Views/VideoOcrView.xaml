@@ -7,6 +7,7 @@
              xmlns:common="clr-namespace:Translumo.MVVM.Common"
              xmlns:utils="clr-namespace:Translumo.Utils"
              mc:Ignorable="d"
+             Loaded="VideoOcrView_OnLoaded"
              d:DesignHeight="450" d:DesignWidth="800" >
     <UserControl.Resources>
         <utils:BitmapToImageSourceConverter x:Key="ImageConverter"/>
@@ -25,7 +26,20 @@
         <TextBox Text="{Binding Mode=TwoWay, Path = Path}"></TextBox>
         <Button Grid.Row="0" Grid.Column="1" Click="Browse_OnClick">Browse</Button>
         <Button Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" Click="Load_OnClick">Load</Button>
-        <Image Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Source="{Binding Path=PreviewBitmap, Converter={StaticResource ImageConverter}}"></Image>
+        
+        <Canvas Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Name="RectCanvas" MouseDown="RectCanvas_OnMouseDown" MouseMove="RectCanvas_OnMouseMove" MouseUp="RectCanvas_OnMouseUp">
+            <Image Source="{Binding Path=PreviewBitmap, Converter={StaticResource ImageConverter}}"
+                   Height="{Binding ElementName=RectCanvas, Path=ActualHeight}"
+                   Width="{Binding ElementName=RectCanvas, Path=ActualWidth}"
+                   ></Image>
+            <Rectangle
+                Visibility="Visible"
+                x:Name="SelectedArea"
+                Stroke="Black"
+                Fill="#A0808080"
+                StrokeThickness="1"
+            />
+        </Canvas>
         <Slider Grid.Row="3" Grid.Column="0" Minimum="0" Maximum="100" Value="{Binding Path=ProgressValue, Mode=TwoWay}"></Slider>
         <Viewbox Grid.Row="3" Grid.Column="1" Stretch="Uniform">
             <TextBlock>
