@@ -130,7 +130,9 @@ namespace Translumo
             services.AddSingleton<IReleasesClient, GithubApiClient>(provider => new GithubApiClient("Danily07", "Translumo"));
             services.AddSingleton<ICapturerFactory, ScreenCapturerFactory>();
             services.AddSingleton<PythonEngineWrapper>();
+            services.AddSingleton<MultiThreadVideoCaptureServiceFactory>();
 
+            services.AddTransient<IVideoOcrService, DefaultVideoOcrService>();
             services.AddTransient<IProcessingService, TranslationProcessingService>();
             services.AddTransient<OcrEnginesFactory>();
             services.AddTransient<TranslatorFactory>();

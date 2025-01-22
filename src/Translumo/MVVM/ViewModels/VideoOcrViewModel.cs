@@ -3,7 +3,10 @@ using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Translumo.Configuration;
+using Translumo.Services;
 using Translumo.Utils;
 using Translumo.Video;
 using MessageBox = System.Windows.Forms.MessageBox;
@@ -15,6 +18,7 @@ namespace Translumo.MVVM.ViewModels
     {
         private readonly IVideoPreviewService _videoPreviewService;
         private readonly ILogger<VideoOcrViewModel> _logger;
+        private readonly IServiceProvider _serviceProvider;
         private TimeSpan _duration;
         private TimeSpan _currentTime;
         private Task<Bitmap> _previewTask;
@@ -84,10 +88,11 @@ namespace Translumo.MVVM.ViewModels
             set => SetProperty(ref _path, value);
         }
 
-        public VideoOcrViewModel(IVideoPreviewService videoPreviewService, ILogger<VideoOcrViewModel> logger)
+        public VideoOcrViewModel(IVideoPreviewService videoPreviewService, ILogger<VideoOcrViewModel> logger, IServiceProvider serviceProvider)
         {
             _videoPreviewService = videoPreviewService;
             _logger = logger;
+            _serviceProvider = serviceProvider;
         }
 
         public void OnLoadClicked()
@@ -183,6 +188,21 @@ namespace Translumo.MVVM.ViewModels
         public void Dispose()
         {
             LocalizationManager.ReleaseChangedValuesCallbacks(this);
+        }
+
+        public void OnStartClicked(Rectangle rectangle)
+        {
+            var voc = new VideoOcrConfiguration
+            {
+                Rectangle = rectangle,
+                Interval = 100,
+                VideoPath = _path
+            };
+            var videoOcrService = _serviceProvider.GetService<IVideoOcrService>();
+            var p = new Progress<float>(v => Console.WriteLine(v.ToString()));
+            var task = videoOcrService.Start(voc, p);
+            task.Wait();
+            Console.WriteLine("Done!");
         }
     }
 }

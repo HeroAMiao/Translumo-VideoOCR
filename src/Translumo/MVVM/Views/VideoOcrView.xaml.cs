@@ -121,9 +121,10 @@ namespace Translumo.MVVM.Views
             var area = ViewModel.SelectedArea;
             
             var rectangle = ViewModel.CalculateChopRectangle(RectCanvas.ActualWidth, RectCanvas.ActualHeight);
-            var chopped = bitmap.Clone(rectangle, PixelFormat.Format24bppRgb);
-            var c = new BitmapToImageSourceConverter();
-            Preview.Source = (BitmapSource)c.Convert(chopped, typeof(BitmapSource), null, null);
+            // var chopped = bitmap.Clone(rectangle, PixelFormat.Format24bppRgb);
+            // var c = new BitmapToImageSourceConverter();
+            // Preview.Source = (BitmapSource)c.Convert(chopped, typeof(BitmapSource), null, null);
+            ViewModel.OnStartClicked(rectangle);
         }
         private void VideoOcrView_OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
