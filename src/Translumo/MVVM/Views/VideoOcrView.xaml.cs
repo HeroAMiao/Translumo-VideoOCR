@@ -114,10 +114,6 @@ namespace Translumo.MVVM.Views
             e.Handled = true;
         }
 
-        private void VideoOcrView_OnLoaded(object sender, RoutedEventArgs e)
-        {
-            ViewModel.PropertyChanged += ViewModelPropertyChanged;
-        }
 
         private void StartBtn_OnClick(object sender, RoutedEventArgs e)
         {
@@ -129,6 +125,17 @@ namespace Translumo.MVVM.Views
             var c = new BitmapToImageSourceConverter();
             Preview.Source = (BitmapSource)c.Convert(chopped, typeof(BitmapSource), null, null);
         }
+        private void VideoOcrView_OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (e.OldValue is VideoOcrViewModel v)
+            {
+                v.PropertyChanged -= ViewModelPropertyChanged;
+            }
 
+            if (ViewModel != null)
+            {
+                ViewModel.PropertyChanged += ViewModelPropertyChanged;
+            }
+        }
     }
 }

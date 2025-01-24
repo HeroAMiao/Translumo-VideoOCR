@@ -7,7 +7,7 @@
              xmlns:common="clr-namespace:Translumo.MVVM.Common"
              xmlns:utils="clr-namespace:Translumo.Utils"
              mc:Ignorable="d"
-             Loaded="VideoOcrView_OnLoaded"
+             DataContextChanged="VideoOcrView_OnDataContextChanged"
              d:DesignHeight="450" d:DesignWidth="800" >
     <UserControl.Resources>
         <utils:BitmapToImageSourceConverter x:Key="ImageConverter"/>
