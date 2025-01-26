@@ -195,14 +195,17 @@ namespace Translumo.MVVM.ViewModels
             var voc = new VideoOcrConfiguration
             {
                 Rectangle = rectangle,
-                Interval = 100,
-                VideoPath = _path
+                Interval = 300,
+                VideoPath = _path,
+                StableFrameCount = 2,
+                ChangeThreshold = 0.1
             };
             var videoOcrService = _serviceProvider.GetService<IVideoOcrService>();
             var p = new Progress<float>(v => Console.WriteLine(v.ToString()));
             var task = videoOcrService.Start(voc, p);
             task.Wait();
             Console.WriteLine("Done!");
+            
         }
     }
 }

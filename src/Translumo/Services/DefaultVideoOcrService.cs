@@ -8,6 +8,7 @@ using System.Linq;
 using System.Management.Automation;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using FFMpegCore;
 #if VIDEO_OCR_PROFILE
 using Microsoft.Extensions.Logging;
@@ -22,6 +23,8 @@ namespace Translumo.Services
 {
     public class DefaultVideoOcrService : IVideoOcrService, IDisposable
     {
+        private static readonly List<int> _dpArr = new();
+        
         private readonly OcrEnginesFactory _enginesFactory;
         private TranslationConfiguration _translationConfiguration;
         private OcrGeneralConfiguration _ocrGeneralConfiguration;
@@ -76,9 +79,9 @@ namespace Translumo.Services
             var ocrStopWatch = new Stopwatch();
             var totalStopWatch = Stopwatch.StartNew();
 #endif
-            var sb = new StringBuilder();
-            var result = FFProbe.Analyse(configuration.VideoPath);
-            var duration = result.Duration;
+            var results = new List<OcrResult>();
+            var videoInfo = FFProbe.Analyse(configuration.VideoPath);
+            var duration = videoInfo.Duration;
             var interval = TimeSpan.FromMilliseconds(configuration.Interval);
             var frameCount = (int)Math.Round(duration / interval);
             
@@ -87,6 +90,7 @@ namespace Translumo.Services
             {
                 progress.Report((float) i / frameCount);
                 var captureTime = i * interval;
+                Console.WriteLine($"{i}/{frameCount}");
 #if VIDEO_OCR_PROFILE
                 ffmpegStopWatch.Start();
 #endif
@@ -105,18 +109,169 @@ namespace Translumo.Services
                 {
                     continue;
                 }
-            
-                sb.AppendLine($"{captureTime}: {bestResult.Text}");
+                
+                results.Add(new OcrResult(captureTime, bestResult.Text));
             }
-            
-            File.WriteAllText("out.txt", sb.ToString());
+
+            if (!results.Any())
+            {
+                _logger.LogWarning("No text detected.");
+                return;
+            }
+
+            using (var store = File.OpenWrite("store.xml"))
+            {
+                new XmlSerializer(typeof(List<Store>)).Serialize(store, results.Select(Store.Create).ToList());
+            }
+            var srtEntries = PostProcessText(results, configuration);
+            OutputSrt(srtEntries, configuration.VideoPath + ".srt");
 #if VIDEO_OCR_PROFILE
+            
             totalStopWatch.Stop();
             _logger.LogInformation(
                 "Profiler finished in {totalSeconds} seconds. FFMPEG {ffmpegSeconds} seconds, OCR {ocrSeconds} seconds.",
                 totalStopWatch.Elapsed.TotalSeconds, ffmpegStopWatch.Elapsed.TotalSeconds,
                 ocrStopWatch.Elapsed.TotalSeconds);
 #endif
+        }
+
+        private void OutputSrt(List<SrtEntry> srtEntries, string path)
+        {
+            using var writer = new StreamWriter(File.OpenWrite(path));
+            for (var i = 0; i < srtEntries.Count; i++)
+            {
+                var entry = srtEntries[i];
+                writer.WriteLine(i + 1);
+                writer.Write(entry.Start.ToString(@"hh\:mm\:ss\,fff"));
+                writer.Write(" --> ");
+                writer.WriteLine(entry.End.ToString(@"hh\:mm\:ss\,fff"));
+                writer.WriteLine(entry.Text);
+                writer.WriteLine();
+            }
+        }
+        
+        private static int LongestCommonSubsequence(string text1, string text2)
+        {
+            _dpArr.Clear();
+            var totalLength = (text1.Length + 1) * (text2.Length + 1);
+            _dpArr.EnsureCapacity(totalLength);
+            for (var i = 0; i < totalLength; i++)
+            {
+                _dpArr.Add(0);
+            }
+
+            for (var i = 1; i <= text1.Length; i++)
+            {
+                for (var j = 1; j <= text2.Length; j++)
+                {
+                    if (text1[i - 1] == text2[j - 1])
+                    {
+                        _dpArr[i * text2.Length + j] = _dpArr[(i - 1) * text2.Length + j - 1] + 1;
+                    }
+                    else
+                    {
+                        _dpArr[i * text2.Length + j] = Math.Max(_dpArr[(i - 1) * text2.Length + j], _dpArr[i * text2.Length + j - 1]);
+                    }
+                }
+            }
+
+            return _dpArr[text1.Length * text2.Length + text2.Length];
+        }
+
+        private enum State
+        {
+            Init, DeterminingLength, CheckingStable
+        }
+
+        private bool IsSameText(string prevText, string currentText, VideoOcrConfiguration configuration)
+        {
+            var common = LongestCommonSubsequence(prevText, currentText);
+            //Due to typewriting effect, prev text should have the smaller length, so we use prev text's length as
+            //reference length. And if currentText's length is less than prevText dramatically, then the text is likely
+            //changed.   
+            var prevLength = prevText.Length;
+            var diffCharCount = prevLength - common;
+            var maxDiffCharCount = Math.Ceiling(configuration.ChangeThreshold * prevLength);
+            return diffCharCount <= maxDiffCharCount;
+        }
+        
+        private List<SrtEntry> PostProcessText(List<OcrResult> texts, VideoOcrConfiguration ocrConfiguration)
+        {
+            var state = State.Init;
+            var prevState = State.Init;
+            var checking = texts[0];
+            
+            OcrResult stableTrackingCurrent = default;
+            var stableTrackingCount = 0;
+            OcrResult stableTrackingStart = default;
+            
+            OcrResult lengthDeterminationStart = default;
+            OcrResult lengthDeterminationCurrent = default;
+            
+            List<SrtEntry> srtEntries = new();
+            
+            for (var i = 0; i < texts.Count; i++)
+            {
+                var result = texts[i];
+                switch (state)
+                {
+                    case State.Init:
+                        prevState = State.Init;
+                        stableTrackingStart = result;
+                        stableTrackingCurrent = result;
+                        stableTrackingCount = 0;
+                        state = State.CheckingStable;
+                        break;
+                    case State.CheckingStable:
+                        var isSameText = IsSameText(stableTrackingCurrent.Text, result.Text, ocrConfiguration);
+                        Console.WriteLine($"Checking Stable {i} {result.Time.Ticks} {result.Time} {stableTrackingCurrent.Text} {result.Text} {isSameText} {stableTrackingCount}");
+                        if (!isSameText)
+                        {
+                            state = prevState;
+                            i--;
+                        }
+                        else
+                        {
+                            stableTrackingCurrent = result;
+                            stableTrackingCount++;
+                            if (stableTrackingCount >= ocrConfiguration.StableFrameCount)
+                            {
+                                if (prevState == State.DeterminingLength)
+                                {
+                                    srtEntries.Add(new SrtEntry(lengthDeterminationStart.Time, lengthDeterminationCurrent.Time, lengthDeterminationCurrent.Text));
+                                }
+                                prevState = state;
+                                lengthDeterminationStart = stableTrackingStart;
+                                lengthDeterminationCurrent = result;
+                                state = State.DeterminingLength;
+                            }
+                        }
+                        break;
+                    case State.DeterminingLength:
+                        var sameText = IsSameText(lengthDeterminationCurrent.Text, result.Text, ocrConfiguration);
+                        Console.WriteLine($"DeterminingLength {i} {result.Time.Ticks} {result.Time} {lengthDeterminationCurrent.Text} {result.Text} {sameText}");
+                        if (sameText)
+                        {
+                            lengthDeterminationCurrent = result;
+                        }
+                        else
+                        {
+                            prevState = state;
+                            stableTrackingStart = result;
+                            stableTrackingCurrent = result;
+                            stableTrackingCount = 0;
+                            state = State.CheckingStable;
+                        }
+                        break;
+                }
+            }
+
+            if (state == State.DeterminingLength || prevState == State.DeterminingLength)
+            {
+                srtEntries.Add(new SrtEntry(lengthDeterminationStart.Time, lengthDeterminationCurrent.Time, lengthDeterminationCurrent.Text));
+            }
+
+            return srtEntries;
         }
         
         
@@ -157,6 +312,54 @@ namespace Translumo.Services
         public void Dispose()
         {
             _textProvider?.Dispose();
+        }
+
+        public class Store
+        {
+            public long Tick { get; set; }
+            public string Name { get; set; }
+
+            public OcrResult ToResult()
+            {
+                return new OcrResult(TimeSpan.FromTicks(Tick), Name);
+            }
+
+            public static Store Create(OcrResult result)
+            {
+                return new Store
+                {
+                    Tick = result.Time.Ticks,
+                    Name = result.Text
+                };
+            }
+            
+            
+        }
+
+        private struct SrtEntry
+        {
+            public TimeSpan Start;
+            public TimeSpan End;
+            public string Text;
+
+            public SrtEntry(TimeSpan start, TimeSpan end, string text)
+            {
+                Start = start;
+                End = end;
+                Text = text;
+            }
+        }
+
+        public struct OcrResult
+        {
+            public readonly TimeSpan Time;
+            public readonly string Text;
+
+            public OcrResult(TimeSpan time, string text)
+            {
+                Time = time;
+                Text = text;
+            }
         }
     }
 }

@@ -8,6 +8,6 @@ namespace Translumo.Configuration
         public Rectangle Rectangle;
         public int Interval;
         public int StableFrameCount;
-        public float ChangeThreshold;
+        public double ChangeThreshold;
     }
 }
