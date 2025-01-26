@@ -16,6 +16,9 @@ using Microsoft.Extensions.Logging;
 using Translumo.Configuration;
 using Translumo.OCR;
 using Translumo.OCR.Configuration;
+using Translumo.OCR.EasyOCR;
+using Translumo.OCR.Tesseract;
+using Translumo.OCR.WindowsOCR;
 using Translumo.Processing.TextProcessing;
 using Translumo.Translation.Configuration;
 
@@ -31,7 +34,6 @@ namespace Translumo.Services
         private readonly TextDetectionProvider _textProvider;
         private readonly MultiThreadVideoCaptureServiceFactory _videoCaptureServiceFactory;
         private readonly ILogger<DefaultVideoOcrService> _logger;
-        private IOCREngine[] _engines;
         
         private const float MIN_SCORE_THRESHOLD = 2.1f;
 
@@ -40,21 +42,14 @@ namespace Translumo.Services
             TextDetectionProvider textProvider, MultiThreadVideoCaptureServiceFactory videoCaptureServiceFactory, ILogger<DefaultVideoOcrService> logger)
         {
             _enginesFactory = ocrEnginesFactory;
-            _ocrGeneralConfiguration = ocrConfiguration;
             _textProvider = textProvider;
             _videoCaptureServiceFactory = videoCaptureServiceFactory;
             _logger = logger;
             _translationConfiguration = translationConfiguration;
-            _engines = InitializeEngines().ToArray();
             _textProvider.Language = translationConfiguration.TranslateFromLang;
             
-            _ocrGeneralConfiguration.PropertyChanged += OcrGeneralConfigurationOnPropertyChanged;
         }
 
-        private void OcrGeneralConfigurationOnPropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            _engines = InitializeEngines().ToArray();
-        }
 
         private IEnumerable<IOCREngine> InitializeEngines()
         {
@@ -65,11 +60,30 @@ namespace Translumo.Services
 
         public Task Start(VideoOcrConfiguration videoOcrConfiguration, IProgress<float> progress)
         {
-            if (!_engines.Any())
-            {
-                return Task.FromException(new RuntimeException("no ocr engine is selected."));
-            }
             return Task.Run(() => ExecuteSync(videoOcrConfiguration, progress));
+        }
+
+        private void ReOcrSrtResults(List<SrtEntry> srtEntries, IMultiThreadVideoCaptureService videoCaptureService)
+        {
+            
+            var engines = _enginesFactory.GetEngines(new OcrConfiguration[]
+            {
+                new TesseractOCRConfiguration{Enabled = true},
+                new WindowsOCRConfiguration {Enabled = false},
+                new EasyOCRConfiguration {Enabled = false},
+            }, _translationConfiguration.TranslateFromLang);
+            
+            for (var i = 0; i < srtEntries.Count; i++)
+            {
+                Console.WriteLine($"ReOcr {i} {srtEntries.Count}");
+                var srtEntry = srtEntries[i];
+                var timeSpan = srtEntry.End;
+                var screenshot = videoCaptureService.GetFrameAt(timeSpan);
+                var taskResults = engines.Select(engine => _textProvider.GetTextAsync(engine, screenshot)).ToArray();
+                Task.WaitAll(taskResults);
+                var bestResult = GetBestDetectionResult(taskResults);
+                srtEntry.Text = bestResult.Text;
+            }
         }
 
         private void ExecuteSync(VideoOcrConfiguration configuration, IProgress<float> progress)
@@ -84,7 +98,21 @@ namespace Translumo.Services
             var duration = videoInfo.Duration;
             var interval = TimeSpan.FromMilliseconds(configuration.Interval);
             var frameCount = (int)Math.Round(duration / interval);
-            
+            var engines = _enginesFactory.GetEngines(new OcrConfiguration[]
+            {
+                new TesseractOCRConfiguration
+                {
+                    Enabled = false
+                },
+                new WindowsOCRConfiguration
+                {
+                    Enabled = true
+                },
+                new EasyOCRConfiguration
+                {
+                    Enabled = false
+                }
+            }, _translationConfiguration.TranslateFromLang, true).ToArray();
             using var captureService = _videoCaptureServiceFactory.GetService(configuration.VideoPath, configuration.Rectangle);
             for (var i = 0; i < frameCount; i++)
             {
@@ -99,7 +127,7 @@ namespace Translumo.Services
                 ffmpegStopWatch.Stop();
                 ocrStopWatch.Start();
 #endif
-                var taskResults = _engines.Select(engine => _textProvider.GetTextAsync(engine, screenshot)).ToArray();
+                var taskResults = engines.Select(engine => _textProvider.GetTextAsync(engine, screenshot)).ToArray();
                 Task.WaitAll(taskResults);
                 var bestResult = GetBestDetectionResult(taskResults);
 #if VIDEO_OCR_PROFILE
@@ -124,14 +152,20 @@ namespace Translumo.Services
                 new XmlSerializer(typeof(List<Store>)).Serialize(store, results.Select(Store.Create).ToList());
             }
             var srtEntries = PostProcessText(results, configuration);
+            
+            var reOcrWatch = Stopwatch.StartNew();
+            ReOcrSrtResults(srtEntries, captureService);
+            reOcrWatch.Stop();
             OutputSrt(srtEntries, configuration.VideoPath + ".srt");
+            
+            
 #if VIDEO_OCR_PROFILE
             
             totalStopWatch.Stop();
             _logger.LogInformation(
-                "Profiler finished in {totalSeconds} seconds. FFMPEG {ffmpegSeconds} seconds, OCR {ocrSeconds} seconds.",
+                "Profiler finished in {totalSeconds} seconds. FFMPEG {ffmpegSeconds} seconds, OCR {ocrSeconds} seconds. ReOCR {reOcrSeconds} seconds.",
                 totalStopWatch.Elapsed.TotalSeconds, ffmpegStopWatch.Elapsed.TotalSeconds,
-                ocrStopWatch.Elapsed.TotalSeconds);
+                ocrStopWatch.Elapsed.TotalSeconds, reOcrWatch.Elapsed.TotalSeconds);
 #endif
         }
 
@@ -336,7 +370,7 @@ namespace Translumo.Services
             
         }
 
-        private struct SrtEntry
+        private class SrtEntry
         {
             public TimeSpan Start;
             public TimeSpan End;
