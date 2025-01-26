@@ -138,7 +138,7 @@ namespace Translumo
             services.AddTransient<TranslatorFactory>();
             services.AddTransient<TextResultCacheService>();
             services.AddTransient<IPredictor<InputTextPrediction, OutputTextPrediction>, MlPredictor<InputTextPrediction, OutputTextPrediction>>();
-            services.AddTransient<IEncryptionService, AesEncryptionService>();
+            services.AddTransient<IEncryptionService, NoEncryptionService>();
             services.AddTransient<LanguageDescriptorFactory>();
             services.AddTransient<TtsFactory>();
 
