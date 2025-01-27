@@ -50,6 +50,28 @@
             </TextBlock>
         </Viewbox>
         <Image Name="Preview" Grid.Row="4" Grid.Column="0" ></Image>
+        <Grid Grid.Row="4" Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                
+                <ColumnDefinition Width="auto"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="auto"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="auto"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="auto"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Center">Interval</TextBlock>
+            <TextBox Grid.Column="1" Text="{Binding Path=Interval, Mode=TwoWay}" VerticalAlignment="Center" Margin="4,0,4,0"></TextBox>
+            <TextBlock Grid.Column="2"  HorizontalAlignment="Right" VerticalAlignment="Center">MinFrame</TextBlock>
+            <TextBox Grid.Column="3" Text="{Binding Path=MinFrame, Mode=TwoWay}" VerticalAlignment="Center" Margin="4,0,4,0"></TextBox>
+            <TextBlock Grid.Column="4" HorizontalAlignment="Right" VerticalAlignment="Center">ChangeThreshold</TextBlock>
+            <TextBox Grid.Column="5" Text="{Binding Path=ChangeThreshold, Mode=TwoWay}" VerticalAlignment="Center" Margin="4,0,4,0"></TextBox>
+            <CheckBox Grid.Column="6" IsChecked="{Binding Path=TwoPassOcr, Mode=TwoWay}" Margin="4,0,4,0">TwoPassOCR</CheckBox>
+        </Grid>
         <Button Name="StartBtn" Grid.Row="4" Grid.Column="1" Click="StartBtn_OnClick">Start</Button>
     </Grid>
 </UserControl>

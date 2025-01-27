@@ -9,5 +9,6 @@ namespace Translumo.Configuration
         public int Interval;
         public int StableFrameCount;
         public double ChangeThreshold;
+        public bool TwoPassOcr;
     }
 }

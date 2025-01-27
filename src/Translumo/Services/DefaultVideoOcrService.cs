@@ -135,7 +135,10 @@ namespace Translumo.Services
             var srtEntries = PostProcessText(results, configuration);
             
             var captureService = _videoCaptureServiceFactory.GetService(configuration.VideoPath, configuration.Rectangle);
-            ReOcrSrtResults(srtEntries, captureService, configuration.Interval);
+            if (configuration.TwoPassOcr)
+            {
+                ReOcrSrtResults(srtEntries, captureService, configuration.Interval);
+            }
             OutputSrt(srtEntries, configuration.VideoPath + ".srt");
         }
         

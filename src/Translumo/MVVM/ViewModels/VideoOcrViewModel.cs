@@ -40,6 +40,35 @@ namespace Translumo.MVVM.ViewModels
             set => SetProperty(ref _bitmap, value);
         }
 
+        public int Interval
+        {
+            get => _interval;
+            set => SetProperty(ref _interval, value);
+        }
+
+        public int MinFrame
+        {
+            get => _minFrame;
+            set => SetProperty(ref _minFrame, value);
+        }
+
+        public double ChangeThreshold
+        {
+            get => _changeThreshold;
+            set => SetProperty(ref _changeThreshold, value);
+        }
+
+        public bool TwoPassOcr
+        {
+            get => _twoPassOcr;
+            set => SetProperty(ref _twoPassOcr, value);
+        }
+
+        private bool _twoPassOcr = true;
+        private int _interval = 300;
+        private int _minFrame = 3;
+        private double _changeThreshold = 0.1;
+
         private Rect _selectedArea;
         public Rect SelectedArea
         {
@@ -195,10 +224,11 @@ namespace Translumo.MVVM.ViewModels
             var voc = new VideoOcrConfiguration
             {
                 Rectangle = rectangle,
-                Interval = 300,
+                Interval = _interval,
                 VideoPath = _path,
-                StableFrameCount = 2,
-                ChangeThreshold = 0.1
+                StableFrameCount = _minFrame,
+                ChangeThreshold = _changeThreshold,
+                TwoPassOcr = _twoPassOcr
             };
             var videoOcrService = _serviceProvider.GetService<IVideoOcrService>();
             var p = new Progress<float>(v => Console.WriteLine(v.ToString()));
