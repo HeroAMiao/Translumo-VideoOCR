@@ -65,7 +65,7 @@ namespace Translumo.Services
             // return Task.Run(() => ExecuteSync(videoOcrConfiguration, progress));
         }
 
-        private void ReOcrSrtResults(List<SrtEntry> srtEntries, IMultiThreadVideoCaptureService videoCaptureService)
+        private void ReOcrSrtResults(List<SrtEntry> srtEntries, IMultiThreadVideoCaptureService videoCaptureService, int interval)
         {
             
             var engines = _enginesFactory.GetEngines(new OcrConfiguration[]
@@ -79,7 +79,11 @@ namespace Translumo.Services
             {
                 Console.WriteLine($"ReOcr {i} {srtEntries.Count}");
                 var srtEntry = srtEntries[i];
-                var timeSpan = srtEntry.End;
+                var timeSpan = srtEntry.End - TimeSpan.FromMilliseconds(interval);
+                if (timeSpan < srtEntry.Start)
+                {
+                    timeSpan = srtEntry.Start;
+                }
                 var screenshot = videoCaptureService.GetFrameAt(timeSpan);
                 var taskResults = engines.Select(engine => _textProvider.GetTextAsync(engine, screenshot)).ToArray();
                 Task.WaitAll(taskResults);
@@ -142,7 +146,7 @@ namespace Translumo.Services
             var srtEntries = PostProcessText(results, configuration);
             
             using var captureService = _videoCaptureServiceFactory.GetService(configuration.VideoPath, configuration.Rectangle);
-            ReOcrSrtResults(srtEntries, captureService);
+            ReOcrSrtResults(srtEntries, captureService, configuration.Interval);
             OutputSrt(srtEntries, configuration.VideoPath + ".srt");
         }
         
@@ -215,7 +219,7 @@ namespace Translumo.Services
             var srtEntries = PostProcessText(results, configuration);
             
             var reOcrWatch = Stopwatch.StartNew();
-            ReOcrSrtResults(srtEntries, captureService);
+            ReOcrSrtResults(srtEntries, captureService, configuration.Interval);
             reOcrWatch.Stop();
             OutputSrt(srtEntries, configuration.VideoPath + ".srt");
             
