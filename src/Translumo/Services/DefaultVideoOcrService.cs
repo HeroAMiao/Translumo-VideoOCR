@@ -73,7 +73,7 @@ namespace Translumo.Services
                 new TesseractOCRConfiguration{Enabled = true},
                 new WindowsOCRConfiguration {Enabled = false},
                 new EasyOCRConfiguration {Enabled = false},
-            }, _translationConfiguration.TranslateFromLang);
+            }, _translationConfiguration.TranslateFromLang).ToArray();
             
             for (var i = 0; i < srtEntries.Count; i++)
             {
