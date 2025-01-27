@@ -2,10 +2,8 @@
 
 namespace Translumo.Services
 {
-    public interface IMultiThreadVideoCaptureService : IDisposable
+    public interface IMultiThreadVideoCaptureService
     {
         public byte[] GetFrameAt(TimeSpan timeSpan);
-
-        public string Test();
     }
 }

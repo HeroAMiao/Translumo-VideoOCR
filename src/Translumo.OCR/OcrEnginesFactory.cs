@@ -27,7 +27,7 @@ namespace Translumo.OCR
             this._cachedEngines = new List<IOCREngine>();
         }
         public IEnumerable<IOCREngine> GetEngines(IEnumerable<OcrConfiguration> ocrConfigurations,
-            Languages detectionLanguage, bool preprocess = true)
+            Languages detectionLanguage)
         {
             var langDescriptor = _languageService.GetLanguageDescriptor(detectionLanguage);
 
@@ -40,7 +40,7 @@ namespace Translumo.OCR
                     if (!TryRemoveIfDisabled<WindowsOCREngine>(ocrConfiguration))
                         yield return GetEngine(() => new WindowsOCREngine(langDescriptor), detectionLanguage);
 
-                    if (!TryRemoveIfDisabled<WinOCREngineWithPreprocess>(ocrConfiguration) && preprocess)
+                    if (!TryRemoveIfDisabled<WinOCREngineWithPreprocess>(ocrConfiguration))
                         yield return GetEngine(() => new WinOCREngineWithPreprocess(langDescriptor), detectionLanguage);
                 }
 
@@ -49,7 +49,7 @@ namespace Translumo.OCR
                     if (!TryRemoveIfDisabled<TesseractOCREngine>(ocrConfiguration))
                         yield return GetEngine(() => new TesseractOCREngine(langDescriptor), detectionLanguage);
 
-                    if (!TryRemoveIfDisabled<TesseractOCREngineWIthPreprocess>(ocrConfiguration) && preprocess)
+                    if (!TryRemoveIfDisabled<TesseractOCREngineWIthPreprocess>(ocrConfiguration))
                         yield return GetEngine(() => new TesseractOCREngineWIthPreprocess(langDescriptor), detectionLanguage);
                 }
 

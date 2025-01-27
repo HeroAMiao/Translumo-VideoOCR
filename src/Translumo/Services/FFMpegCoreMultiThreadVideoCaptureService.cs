@@ -36,45 +36,19 @@ namespace Translumo.Services
         {
             using (var outputStream = new MemoryStream())
             {
-                // 调用 FFmpeg 处理视频帧
                 FFMpegArguments
-                    .FromFileInput(_path, false, op => op.Seek(timeSpan)) // 输入视频文件
+                    .FromFileInput(_path, false, op => op.Seek(timeSpan))
                     .OutputToPipe(new StreamPipeSink(outputStream), options => options
                         .SelectStream(_videoStreamIndex)
                         .ForcePixelFormat("rgb24")
                         .WithFrameOutputCount(1)
-                        .WithVideoCodec("tiff") // 设置输出为 TIFF 格式
-                        .WithCustomArgument($"-vf crop={_rectangle.Width}:{_rectangle.Height}:{_rectangle.X}:{_rectangle.Y}") // 裁剪指定区域
-                        .ForceFormat("image2")) // 强制输出图像格式
+                        .WithVideoCodec("tiff")
+                        .WithCustomArgument($"-vf crop={_rectangle.Width}:{_rectangle.Height}:{_rectangle.X}:{_rectangle.Y}")
+                        .ForceFormat("image2"))
                     .ProcessSynchronously();
-                // 将内存流转换为 byte 数组
                 return outputStream.ToArray();
             }
         }
 
-        public string Test()
-        {
-            using (var outputStream = new MemoryStream())
-            {
-                var timeSpan = TimeSpan.FromSeconds(1);
-                // 调用 FFmpeg 处理视频帧
-                var a = FFMpegArguments
-                    .FromFileInput(_path, false, op => op.Seek(timeSpan)) // 输入视频文件
-                    .OutputToPipe(new StreamPipeSink(outputStream), options => options
-                        .SelectStream(_videoStreamIndex)
-                        .ForcePixelFormat("rgb24")
-                        .WithFrameOutputCount(1)
-                        .WithVideoCodec("tiff") // 设置输出为 TIFF 格式
-                        .WithCustomArgument(
-                            $"-vf crop={_rectangle.Width}:{_rectangle.Height}:{_rectangle.X}:{_rectangle.Y}") // 裁剪指定区域
-                        .ForceFormat("image2")) // 强制输出图像格式
-                    .Arguments;
-                return a;
-            }
-        }
-
-        public void Dispose()
-        {
-        }
     }
 }

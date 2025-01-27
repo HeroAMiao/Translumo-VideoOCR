@@ -1,12 +1,9 @@
 ﻿#define VIDEO_OCR_PROFILE
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
-using FFMpegCore;
 #if VIDEO_OCR_PROFILE
 using Microsoft.Extensions.Logging;
 #endif
@@ -26,43 +23,36 @@ namespace Translumo.Services
         private static readonly List<int> _dpArr = new();
         
         private readonly OcrEnginesFactory _enginesFactory;
-        private TranslationConfiguration _translationConfiguration;
-        private OcrGeneralConfiguration _ocrGeneralConfiguration;
+        private readonly TranslationConfiguration _translationConfiguration;
+        private readonly OcrGeneralConfiguration _ocrGeneralConfiguration;
         private readonly TextDetectionProvider _textProvider;
         private readonly MultiThreadVideoCaptureServiceFactory _videoCaptureServiceFactory;
         private readonly SequenceVideoCaptureServiceFactory _sequenceVideoCaptureServiceFactory;
         private readonly ILogger<DefaultVideoOcrService> _logger;
         
-        private const float MIN_SCORE_THRESHOLD = 2.1f;
+        private const float MinScoreThreshold = 2.1f;
 
         public DefaultVideoOcrService(OcrEnginesFactory ocrEnginesFactory,
-            TranslationConfiguration translationConfiguration, OcrGeneralConfiguration ocrConfiguration,
-            TextDetectionProvider textProvider, MultiThreadVideoCaptureServiceFactory videoCaptureServiceFactory,
+            TranslationConfiguration translationConfiguration, TextDetectionProvider textProvider,
+            MultiThreadVideoCaptureServiceFactory videoCaptureServiceFactory,
             SequenceVideoCaptureServiceFactory sequenceVideoCaptureServiceFactory,
-            ILogger<DefaultVideoOcrService> logger)
+            ILogger<DefaultVideoOcrService> logger, OcrGeneralConfiguration ocrGeneralConfiguration)
         {
             _enginesFactory = ocrEnginesFactory;
             _textProvider = textProvider;
             _videoCaptureServiceFactory = videoCaptureServiceFactory;
             _sequenceVideoCaptureServiceFactory = sequenceVideoCaptureServiceFactory;
             _logger = logger;
+            _ocrGeneralConfiguration = ocrGeneralConfiguration;
             _translationConfiguration = translationConfiguration;
             _textProvider.Language = translationConfiguration.TranslateFromLang;
             
         }
 
 
-        private IEnumerable<IOCREngine> InitializeEngines()
-        {
-            return _enginesFactory
-                .GetEngines(_ocrGeneralConfiguration.OcrConfigurations, _translationConfiguration.TranslateFromLang, true)
-                .ToArray();
-        }
-
         public Task Start(VideoOcrConfiguration videoOcrConfiguration, IProgress<float> progress)
         {
             return SequenceExecute(videoOcrConfiguration);
-            // return Task.Run(() => ExecuteSync(videoOcrConfiguration, progress));
         }
 
         private void ReOcrSrtResults(List<SrtEntry> srtEntries, IMultiThreadVideoCaptureService videoCaptureService, int interval)
@@ -92,7 +82,7 @@ namespace Translumo.Services
             }
         }
 
-        public async Task SequenceExecute(VideoOcrConfiguration configuration)
+        private async Task SequenceExecute(VideoOcrConfiguration configuration)
         {
             var videoCaptureService = _sequenceVideoCaptureServiceFactory.Create(configuration.VideoPath,
                 configuration.Rectangle, configuration.Interval);
@@ -111,7 +101,7 @@ namespace Translumo.Services
                 {
                     Enabled = false
                 }
-            }, _translationConfiguration.TranslateFromLang, true).ToArray();
+            }, _translationConfiguration.TranslateFromLang).ToArray();
             var i = 0;
             var interval = TimeSpan.FromMilliseconds(configuration.Interval);
             await videoCaptureService.SequenceProcess(async tiff =>
@@ -120,7 +110,8 @@ namespace Translumo.Services
                 await Task.WhenAll(taskResults);
                 var bestResult = GetBestDetectionResult(taskResults);
 
-                //由于未知原因，FFMPEG生成的第一帧与第二帧是相同的，所以我们跳过第一帧
+                //due to unknown reason, ffmpeg will output same frame at first frame and second frame, so we discard
+                //the first frame.
                 if (i <= 0)
                 {
                     i++;
@@ -129,111 +120,25 @@ namespace Translumo.Services
                 var timestamp = Math.Max(0, i - 1) * interval;
                 i++;
                 Console.WriteLine($"Sequence {i}");
-                if (bestResult.ValidityScore <= MIN_SCORE_THRESHOLD)
+                if (bestResult.ValidityScore <= MinScoreThreshold)
                 {
                     return;
                 }
 
                 results.Add(new OcrResult(timestamp, bestResult.Text));
             }).ConfigureAwait(false);
-            Console.WriteLine("First Step Finished");
             if (!results.Any())
             {
-                Console.WriteLine("No text detected");
                 return;
             }
             
             var srtEntries = PostProcessText(results, configuration);
             
-            using var captureService = _videoCaptureServiceFactory.GetService(configuration.VideoPath, configuration.Rectangle);
+            var captureService = _videoCaptureServiceFactory.GetService(configuration.VideoPath, configuration.Rectangle);
             ReOcrSrtResults(srtEntries, captureService, configuration.Interval);
             OutputSrt(srtEntries, configuration.VideoPath + ".srt");
         }
         
-
-        private void ExecuteSync(VideoOcrConfiguration configuration, IProgress<float> progress)
-        {
-#if VIDEO_OCR_PROFILE
-            var ffmpegStopWatch = new Stopwatch();
-            var ocrStopWatch = new Stopwatch();
-            var totalStopWatch = Stopwatch.StartNew();
-#endif
-            var results = new List<OcrResult>();
-            var videoInfo = FFProbe.Analyse(configuration.VideoPath);
-            var duration = videoInfo.Duration;
-            var interval = TimeSpan.FromMilliseconds(configuration.Interval);
-            var frameCount = (int)Math.Round(duration / interval);
-            var engines = _enginesFactory.GetEngines(new OcrConfiguration[]
-            {
-                new TesseractOCRConfiguration
-                {
-                    Enabled = false
-                },
-                new WindowsOCRConfiguration
-                {
-                    Enabled = true
-                },
-                new EasyOCRConfiguration
-                {
-                    Enabled = false
-                }
-            }, _translationConfiguration.TranslateFromLang, true).ToArray();
-            using var captureService = _videoCaptureServiceFactory.GetService(configuration.VideoPath, configuration.Rectangle);
-            for (var i = 0; i < frameCount; i++)
-            {
-                progress.Report((float) i / frameCount);
-                var captureTime = i * interval;
-                Console.WriteLine($"{i}/{frameCount}");
-#if VIDEO_OCR_PROFILE
-                ffmpegStopWatch.Start();
-#endif
-                var screenshot = captureService.GetFrameAt(captureTime);
-#if VIDEO_OCR_PROFILE
-                ffmpegStopWatch.Stop();
-                ocrStopWatch.Start();
-#endif
-                var taskResults = engines.Select(engine => _textProvider.GetTextAsync(engine, screenshot)).ToArray();
-                Task.WaitAll(taskResults);
-                var bestResult = GetBestDetectionResult(taskResults);
-#if VIDEO_OCR_PROFILE
-                ocrStopWatch.Stop();
-#endif
-                if (bestResult.ValidityScore <= MIN_SCORE_THRESHOLD)
-                {
-                    continue;
-                }
-                
-                results.Add(new OcrResult(captureTime, bestResult.Text));
-            }
-
-            if (!results.Any())
-            {
-                _logger.LogWarning("No text detected.");
-                return;
-            }
-
-            using (var store = File.Open("store.xml", FileMode.Create))
-            {
-                new XmlSerializer(typeof(List<Store>)).Serialize(store, results.Select(Store.Create).ToList());
-            }
-            var srtEntries = PostProcessText(results, configuration);
-            
-            var reOcrWatch = Stopwatch.StartNew();
-            ReOcrSrtResults(srtEntries, captureService, configuration.Interval);
-            reOcrWatch.Stop();
-            OutputSrt(srtEntries, configuration.VideoPath + ".srt");
-            
-            
-#if VIDEO_OCR_PROFILE
-            
-            totalStopWatch.Stop();
-            _logger.LogInformation(
-                "Profiler finished in {totalSeconds} seconds. FFMPEG {ffmpegSeconds} seconds, OCR {ocrSeconds} seconds. ReOCR {reOcrSeconds} seconds.",
-                totalStopWatch.Elapsed.TotalSeconds, ffmpegStopWatch.Elapsed.TotalSeconds,
-                ocrStopWatch.Elapsed.TotalSeconds, reOcrWatch.Elapsed.TotalSeconds);
-#endif
-        }
-
         private void OutputSrt(List<SrtEntry> srtEntries, string path)
         {
             using var writer = new StreamWriter(File.Open(path, FileMode.Create));
@@ -298,8 +203,7 @@ namespace Translumo.Services
         {
             var state = State.Init;
             var prevState = State.Init;
-            var checking = texts[0];
-            
+
             OcrResult stableTrackingCurrent = default;
             var stableTrackingCount = 0;
             OcrResult stableTrackingStart = default;
@@ -323,7 +227,6 @@ namespace Translumo.Services
                         break;
                     case State.CheckingStable:
                         var isSameText = IsSameText(stableTrackingCurrent.Text, result.Text, ocrConfiguration);
-                        Console.WriteLine($"Checking Stable {i} {result.Time.Ticks} {result.Time} {stableTrackingCurrent.Text} {result.Text} {isSameText} {stableTrackingCount}");
                         if (!isSameText)
                         {
                             state = prevState;
@@ -348,7 +251,6 @@ namespace Translumo.Services
                         break;
                     case State.DeterminingLength:
                         var sameText = IsSameText(lengthDeterminationCurrent.Text, result.Text, ocrConfiguration);
-                        Console.WriteLine($"DeterminingLength {i} {result.Time.Ticks} {result.Time} {lengthDeterminationCurrent.Text} {result.Text} {sameText}");
                         if (sameText)
                         {
                             lengthDeterminationCurrent = result;
