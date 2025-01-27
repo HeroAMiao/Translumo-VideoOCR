@@ -128,12 +128,12 @@ namespace Translumo.Services
                 }
                 var timestamp = Math.Max(0, i - 1) * interval;
                 i++;
+                Console.WriteLine($"Sequence {i}");
                 if (bestResult.ValidityScore <= MIN_SCORE_THRESHOLD)
                 {
                     return;
                 }
 
-                Console.WriteLine($"Sequence {i}");
                 results.Add(new OcrResult(timestamp, bestResult.Text));
             }).ConfigureAwait(false);
             Console.WriteLine("First Step Finished");
@@ -212,7 +212,7 @@ namespace Translumo.Services
                 return;
             }
 
-            using (var store = File.OpenWrite("store.xml"))
+            using (var store = File.Open("store.xml", FileMode.Create))
             {
                 new XmlSerializer(typeof(List<Store>)).Serialize(store, results.Select(Store.Create).ToList());
             }
@@ -236,7 +236,7 @@ namespace Translumo.Services
 
         private void OutputSrt(List<SrtEntry> srtEntries, string path)
         {
-            using var writer = new StreamWriter(File.OpenWrite(path));
+            using var writer = new StreamWriter(File.Open(path, FileMode.Create));
             for (var i = 0; i < srtEntries.Count; i++)
             {
                 var entry = srtEntries[i];
