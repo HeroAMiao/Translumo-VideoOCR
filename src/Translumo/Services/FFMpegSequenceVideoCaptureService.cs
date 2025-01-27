@@ -21,7 +21,7 @@ namespace Translumo.Services
             _intervalMs = intervalMs;
 
             var result = FFProbe.Analyse(path);
-            
+            Duration = result.Duration;
             var primaryVideoStream = result.PrimaryVideoStream;
             if (primaryVideoStream == null)
             {
@@ -48,5 +48,7 @@ namespace Translumo.Services
                     .ForceFormat("image2pipe")) // 强制输出图像格式
                 .ProcessAsynchronously();
         }
+
+        public TimeSpan Duration { get; }
     }
 }

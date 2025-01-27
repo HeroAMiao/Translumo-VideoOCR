@@ -15,6 +15,7 @@ using Translumo.OCR.Tesseract;
 using Translumo.OCR.WindowsOCR;
 using Translumo.Processing.TextProcessing;
 using Translumo.Translation.Configuration;
+using Translumo.Utils;
 
 namespace Translumo.Services
 {
@@ -50,12 +51,13 @@ namespace Translumo.Services
         }
 
 
-        public Task Start(VideoOcrConfiguration videoOcrConfiguration, IProgress<float> progress)
+        public Task Start(VideoOcrConfiguration videoOcrConfiguration, IProgress<VideoOcrProgress> progress)
         {
-            return SequenceExecute(videoOcrConfiguration);
+            return SequenceExecute(videoOcrConfiguration, progress);
         }
 
-        private void ReOcrSrtResults(List<SrtEntry> srtEntries, IMultiThreadVideoCaptureService videoCaptureService, int interval)
+        private void ReOcrSrtResults(List<SrtEntry> srtEntries, IMultiThreadVideoCaptureService videoCaptureService,
+            int interval, IProgress<VideoOcrProgress> progress)
         {
             
             var engines = _enginesFactory.GetEngines(new OcrConfiguration[]
@@ -67,7 +69,7 @@ namespace Translumo.Services
             
             for (var i = 0; i < srtEntries.Count; i++)
             {
-                Console.WriteLine($"ReOcr {i} {srtEntries.Count}");
+                progress.Report(new VideoOcrProgress(2, i, srtEntries.Count));
                 var srtEntry = srtEntries[i];
                 var timeSpan = srtEntry.End - TimeSpan.FromMilliseconds(interval);
                 if (timeSpan < srtEntry.Start)
@@ -82,7 +84,7 @@ namespace Translumo.Services
             }
         }
 
-        private async Task SequenceExecute(VideoOcrConfiguration configuration)
+        private async Task SequenceExecute(VideoOcrConfiguration configuration, IProgress<VideoOcrProgress> progress)
         {
             var videoCaptureService = _sequenceVideoCaptureServiceFactory.Create(configuration.VideoPath,
                 configuration.Rectangle, configuration.Interval);
@@ -104,6 +106,7 @@ namespace Translumo.Services
             }, _translationConfiguration.TranslateFromLang).ToArray();
             var i = 0;
             var interval = TimeSpan.FromMilliseconds(configuration.Interval);
+            var max = (int)(videoCaptureService.Duration / interval);
             await videoCaptureService.SequenceProcess(async tiff =>
             {
                 var taskResults = engines.Select(engine => _textProvider.GetTextAsync(engine, tiff)).ToArray();
@@ -119,7 +122,7 @@ namespace Translumo.Services
                 }
                 var timestamp = Math.Max(0, i - 1) * interval;
                 i++;
-                Console.WriteLine($"Sequence {i}");
+                progress.Report(new VideoOcrProgress(1, Math.Min(i, max), max));
                 if (bestResult.ValidityScore <= MinScoreThreshold)
                 {
                     return;
@@ -137,7 +140,7 @@ namespace Translumo.Services
             var captureService = _videoCaptureServiceFactory.GetService(configuration.VideoPath, configuration.Rectangle);
             if (configuration.TwoPassOcr)
             {
-                ReOcrSrtResults(srtEntries, captureService, configuration.Interval);
+                ReOcrSrtResults(srtEntries, captureService, configuration.Interval, progress);
             }
             OutputSrt(srtEntries, configuration.VideoPath + ".srt");
         }

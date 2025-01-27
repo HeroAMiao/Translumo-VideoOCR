@@ -6,5 +6,6 @@ namespace Translumo.Services
     public interface ISequenceVideoCaptureService
     {
         Task SequenceProcess(Func<byte[], Task> consumer);
+        TimeSpan Duration { get; }
     }
 }

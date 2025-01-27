@@ -64,6 +64,20 @@ namespace Translumo.MVVM.ViewModels
             set => SetProperty(ref _twoPassOcr, value);
         }
 
+        public bool IsProcessing
+        {
+            get => _isProcessing;
+            set => SetProperty(ref _isProcessing, value);
+        }
+
+        public VideoOcrProgress Progress
+        {
+            get => _progress;
+            set => SetProperty(ref _progress, value);
+        }
+
+        private VideoOcrProgress _progress;
+        private bool _isProcessing;
         private bool _twoPassOcr = true;
         private int _interval = 300;
         private int _minFrame = 3;
@@ -231,11 +245,21 @@ namespace Translumo.MVVM.ViewModels
                 TwoPassOcr = _twoPassOcr
             };
             var videoOcrService = _serviceProvider.GetService<IVideoOcrService>();
-            var p = new Progress<float>(v => Console.WriteLine(v.ToString()));
+            var p = new Progress<VideoOcrProgress>(v => Progress = v);
             var task = videoOcrService.Start(voc, p);
-            task.Wait();
-            Console.WriteLine("Done!");
-            
+            IsProcessing = true;
+            task.ContinueWith(t =>
+            {
+                IsProcessing = false;
+                if (t.IsCompletedSuccessfully)
+                {
+                    MessageBox.Show(LocalizationManager.GetValue("Str.Stages.VideoOcrSuccess"));
+                }
+                else
+                {
+                    MessageBox.Show(LocalizationManager.GetValue("Str.Stages.VideoOcrFailed"));
+                }
+            });
         }
     }
 }
