@@ -94,25 +94,20 @@ namespace Translumo.MVVM.ViewModels
         }
 
 
+        public int ProgressMax
+        {
+            get => (int)_duration.TotalMilliseconds;
+        }
+        
         public int ProgressValue
         {
             get
             {
-                if (_duration.Ticks == 0)
-                {
-                    return 0;
-                }
-
-                return (int)(_currentTime.Ticks * 100 / _duration.Ticks);
+                return (int)_currentTime.TotalMilliseconds;
             }
             set
             {
-                if (_duration.Ticks == 0)
-                {
-                    return;
-                }
-
-                var timeSpan = new TimeSpan(value * _duration.Ticks / 100);
+                var timeSpan = TimeSpan.FromMilliseconds(value);
                 SetProperty(ref _currentTime, timeSpan);
                 OnPropertyChanged(nameof(CurrentTime));
                 OnCurrentTimeChanged();
@@ -122,7 +117,11 @@ namespace Translumo.MVVM.ViewModels
         public TimeSpan Duration
         {
             get => _duration;
-            set => SetProperty(ref _duration, value);
+            set
+            {
+                SetProperty(ref _duration, value);
+                OnPropertyChanged(nameof(ProgressMax));
+            }
         }
 
         public string Path

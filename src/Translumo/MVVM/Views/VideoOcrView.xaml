@@ -65,7 +65,7 @@
                     StrokeThickness="1"
                 />
             </Canvas>
-            <Slider Grid.Row="3" Grid.Column="0" Minimum="0" Maximum="100" Value="{Binding Path=ProgressValue, Mode=TwoWay}"></Slider>
+            <Slider Grid.Row="3" Grid.Column="0" Minimum="0" Maximum="{Binding ProgressMax, Mode=OneWay}" Value="{Binding Path=ProgressValue, Mode=TwoWay}"></Slider>
             <Viewbox Grid.Row="3" Grid.Column="1" Stretch="Uniform">
                 <TextBlock>
                     <Run Text="{Binding CurrentTime, Mode=OneWay, StringFormat=h\\:mm\\:ss}"></Run>
