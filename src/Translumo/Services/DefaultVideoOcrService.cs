@@ -1,12 +1,9 @@
 ﻿#define VIDEO_OCR_PROFILE
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Management.Automation;
-using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using FFMpegCore;
@@ -33,17 +30,21 @@ namespace Translumo.Services
         private OcrGeneralConfiguration _ocrGeneralConfiguration;
         private readonly TextDetectionProvider _textProvider;
         private readonly MultiThreadVideoCaptureServiceFactory _videoCaptureServiceFactory;
+        private readonly SequenceVideoCaptureServiceFactory _sequenceVideoCaptureServiceFactory;
         private readonly ILogger<DefaultVideoOcrService> _logger;
         
         private const float MIN_SCORE_THRESHOLD = 2.1f;
 
         public DefaultVideoOcrService(OcrEnginesFactory ocrEnginesFactory,
             TranslationConfiguration translationConfiguration, OcrGeneralConfiguration ocrConfiguration,
-            TextDetectionProvider textProvider, MultiThreadVideoCaptureServiceFactory videoCaptureServiceFactory, ILogger<DefaultVideoOcrService> logger)
+            TextDetectionProvider textProvider, MultiThreadVideoCaptureServiceFactory videoCaptureServiceFactory,
+            SequenceVideoCaptureServiceFactory sequenceVideoCaptureServiceFactory,
+            ILogger<DefaultVideoOcrService> logger)
         {
             _enginesFactory = ocrEnginesFactory;
             _textProvider = textProvider;
             _videoCaptureServiceFactory = videoCaptureServiceFactory;
+            _sequenceVideoCaptureServiceFactory = sequenceVideoCaptureServiceFactory;
             _logger = logger;
             _translationConfiguration = translationConfiguration;
             _textProvider.Language = translationConfiguration.TranslateFromLang;
@@ -60,7 +61,8 @@ namespace Translumo.Services
 
         public Task Start(VideoOcrConfiguration videoOcrConfiguration, IProgress<float> progress)
         {
-            return Task.Run(() => ExecuteSync(videoOcrConfiguration, progress));
+            return SequenceExecute(videoOcrConfiguration);
+            // return Task.Run(() => ExecuteSync(videoOcrConfiguration, progress));
         }
 
         private void ReOcrSrtResults(List<SrtEntry> srtEntries, IMultiThreadVideoCaptureService videoCaptureService)
@@ -85,6 +87,65 @@ namespace Translumo.Services
                 srtEntry.Text = bestResult.Text;
             }
         }
+
+        public async Task SequenceExecute(VideoOcrConfiguration configuration)
+        {
+            var videoCaptureService = _sequenceVideoCaptureServiceFactory.Create(configuration.VideoPath,
+                configuration.Rectangle, configuration.Interval);
+            var results = new List<OcrResult>();
+            var engines = _enginesFactory.GetEngines(new OcrConfiguration[]
+            {
+                new TesseractOCRConfiguration
+                {
+                    Enabled = false
+                },
+                new WindowsOCRConfiguration
+                {
+                    Enabled = true
+                },
+                new EasyOCRConfiguration
+                {
+                    Enabled = false
+                }
+            }, _translationConfiguration.TranslateFromLang, true).ToArray();
+            var i = 0;
+            var interval = TimeSpan.FromMilliseconds(configuration.Interval);
+            await videoCaptureService.SequenceProcess(async tiff =>
+            {
+                var taskResults = engines.Select(engine => _textProvider.GetTextAsync(engine, tiff)).ToArray();
+                await Task.WhenAll(taskResults);
+                var bestResult = GetBestDetectionResult(taskResults);
+
+                //由于未知原因，FFMPEG生成的第一帧与第二帧是相同的，所以我们跳过第一帧
+                if (i <= 0)
+                {
+                    i++;
+                    return;
+                }
+                var timestamp = Math.Max(0, i - 1) * interval;
+                i++;
+                if (bestResult.ValidityScore <= MIN_SCORE_THRESHOLD)
+                {
+                    return;
+                }
+
+                Console.WriteLine($"Sequence {i}");
+                results.Add(new OcrResult(timestamp, bestResult.Text));
+            }).ConfigureAwait(false);
+            Console.WriteLine("First Step Finished");
+            if (!results.Any())
+            {
+                Console.WriteLine("No text detected");
+                return;
+            }
+            
+            var srtEntries = PostProcessText(results, configuration);
+            
+            using var captureService = _videoCaptureServiceFactory.GetService(configuration.VideoPath, configuration.Rectangle);
+            ReOcrSrtResults(srtEntries, captureService);
+            OutputSrt(srtEntries, configuration.VideoPath + ".srt");
+        }
+        
 
         private void ExecuteSync(VideoOcrConfiguration configuration, IProgress<float> progress)
         {

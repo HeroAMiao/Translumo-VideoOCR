@@ -3,7 +3,6 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using FFMpegCore;
-using FFMpegCore.Arguments;
 using FFMpegCore.Pipes;
 
 namespace Translumo.Services

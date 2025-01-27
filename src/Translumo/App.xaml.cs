@@ -131,6 +131,7 @@ namespace Translumo
             services.AddSingleton<ICapturerFactory, ScreenCapturerFactory>();
             services.AddSingleton<PythonEngineWrapper>();
             services.AddSingleton<MultiThreadVideoCaptureServiceFactory>();
+            services.AddSingleton<SequenceVideoCaptureServiceFactory>();
 
             services.AddTransient<IVideoOcrService, DefaultVideoOcrService>();
             services.AddTransient<IProcessingService, TranslationProcessingService>();
