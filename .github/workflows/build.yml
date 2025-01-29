@@ -1,0 +1,48 @@
+﻿name: Build And Release
+on:
+  push:
+    tags:
+      v*
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      Solution_Name: Translumo.sln
+      SkipBinariesExtract: true
+  
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+  
+      - name: Install .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 7.0.x
+  
+      - name: Build the application
+        run: dotnet build $env:Solution_Name /p:Configuration=Release
+        
+      - name: Tree 
+        run: tree /f src\Translumo\bin\Release
+  
+      - name: Publish the application
+        run: dotnet publish src\Translumo\Translumo.csproj -c Release -o .\dist # for unknown reason, --no-build can not be omitted, may be related to: https://github.com/dotnet/sdk/issues/44992
+
+      - name: extract binary
+        run: cmd /c binaries_extract.bat ".\dist\"
+  
+      - name: zip the release
+        uses: thedoctor0/zip-release@0.7.5
+        with:
+          type: 'zip'
+          filename: 'Translumo-VideoOCR.zip'
+          directory: dist
+          
+      - name: create the release on github      
+        uses: softprops/action-gh-release@v2
+        with:
+          files: 'dist/Translumo-VideoOCR.zip'
