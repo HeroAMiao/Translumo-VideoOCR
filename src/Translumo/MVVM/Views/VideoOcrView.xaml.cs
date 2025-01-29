@@ -22,7 +22,6 @@ namespace Translumo.MVVM.Views
         
         private Regex _numRegex = new Regex("^[0-9]*$");
         private Regex _decimalRegex = new Regex("^[0-9.]*$");
-        private readonly Binding _bitmapBinding;
         private bool _mouseIsDown;
         private Point _relativeInitPos;
 
