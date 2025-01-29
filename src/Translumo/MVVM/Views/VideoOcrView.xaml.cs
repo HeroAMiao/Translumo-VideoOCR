@@ -20,8 +20,8 @@ namespace Translumo.MVVM.Views
     public partial class VideoOcrView : UserControl
     {
         
-        private Regex _numRegex = new Regex("[0-9]*");
-        private Regex _decimalRegex = new Regex("[0-9]*\\.?[0-9]*");
+        private Regex _numRegex = new Regex("^[0-9]*$");
+        private Regex _decimalRegex = new Regex("^[0-9.]*$");
         private readonly Binding _bitmapBinding;
         private bool _mouseIsDown;
         private Point _relativeInitPos;
@@ -150,7 +150,7 @@ namespace Translumo.MVVM.Views
 
         private void DecimalNumberValidationTextBox(object sender, TextCompositionEventArgs e)
         {
-            e.Handled = _decimalRegex.IsMatch(e.Text);
+            e.Handled = !_decimalRegex.IsMatch(e.Text);
         }
 
 
