@@ -1,0 +1,33 @@
+﻿name: build.yml
+on:
+  push:
+    tags:
+      v*
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+  env:
+    Solution_Name: Translumo.sln
+  
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.x
+
+    - name: Build the application
+      run: dotnet build $env:Solution_Name /p:Configuration=Release
+
+    - name: Release the application
+      uses: elgohr/Github-Release-Action@v5
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        title: ${{  github.ref_name }}
