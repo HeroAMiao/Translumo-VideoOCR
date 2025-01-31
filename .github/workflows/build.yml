@@ -42,4 +42,4 @@ jobs:
       - name: create the release on github      
         uses: softprops/action-gh-release@v2
         with:
-          files: 'dist\Translumo-VideoOCR.zip'
+          files: 'dist/Translumo-VideoOCR.zip'
