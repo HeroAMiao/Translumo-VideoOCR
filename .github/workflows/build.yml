@@ -39,13 +39,7 @@ jobs:
           filename: 'Translumo-VideoOCR.zip'
           directory: dist
           
-      - name: test
-        run: dir
-        
-      - name: test3
-        run: dir dist
-          
       - name: create the release on github      
         uses: softprops/action-gh-release@v2
         with:
-          files: 'Translumo-VideoOCR.zip'
+          files: 'dist\Translumo-VideoOCR.zip'
