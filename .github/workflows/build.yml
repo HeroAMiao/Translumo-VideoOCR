@@ -41,6 +41,12 @@ jobs:
           
       - name: test
         run: dir
+        
+      - name: test2
+        run: cd dist
+        
+      - name: test3
+        run: dir
           
       - name: create the release on github      
         uses: softprops/action-gh-release@v2
