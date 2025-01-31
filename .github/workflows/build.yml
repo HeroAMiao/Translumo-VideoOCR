@@ -32,9 +32,14 @@ jobs:
       - name: extract binary
         run: cmd /c binaries_extract.bat ".\dist\"
   
-      - name: Release the application
+      - name: zip the release
         uses: thedoctor0/zip-release@0.7.5
         with:
           type: 'zip'
           filename: 'Translumo-VideoOCR.zip'
           directory: dist
+          
+      - name: create the release on github      
+        uses: softprops/action-gh-release@v2
+        with:
+          files: 'Translumo-VideoOCR.zip'
