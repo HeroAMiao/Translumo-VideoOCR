@@ -1,4 +1,4 @@
-﻿name: build.yml
+﻿name: Build And Release
 on:
   push:
     tags:
@@ -10,6 +10,7 @@ jobs:
     runs-on: windows-latest
     env:
       Solution_Name: Translumo.sln
+      SkipBinariesExtract: true
   
     steps:
       - name: Checkout
@@ -25,9 +26,15 @@ jobs:
       - name: Build the application
         run: dotnet build $env:Solution_Name /p:Configuration=Release
   
+      - name: Publish the application
+        run: dotnet publish src\Translumo\Translumo.csproj --no-build -c Release -o .\dist
+        
+      - name: extract binary
+        run: binaries_extract.bat ".\dist"
+  
       - name: Release the application
-        uses: elgohr/Github-Release-Action@v5
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: thedoctor0/zip-release@0.7.5
         with:
-          title: ${{  github.ref_name }}
+          type: 'zip'
+          filename: 'Translumo-VideoOCR.zip'
+          directory: dist
