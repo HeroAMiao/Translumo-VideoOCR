@@ -11,8 +11,8 @@
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<RuntimeIdentifier>win10-x64</RuntimeIdentifier>
 		<SatelliteResourceLanguages>en-US;en</SatelliteResourceLanguages>
-<!--		<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>-->
-<!--		<PublishSingleFile>true</PublishSingleFile>-->
+		<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+		<PublishSingleFile>true</PublishSingleFile>
 		<ApplicationIcon>Resources\Icons\favicon.ico</ApplicationIcon>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	</PropertyGroup>
