@@ -30,10 +30,10 @@ jobs:
         run: tree /f src\Translumo\bin\Release
   
       - name: Publish the application
-        run: dotnet publish src\Translumo\Translumo.csproj --no-build -c Release -o .\dist
-        
-      - name: extract binary
-        run: cmd /c binaries_extract.bat ".\dist\"
+        run: dotnet publish src\Translumo\Translumo.csproj -c Release -o .\dist
+#        
+#      - name: extract binary
+#        run: cmd /c binaries_extract.bat ".\dist\"
   
       - name: zip the release
         uses: thedoctor0/zip-release@0.7.5
