@@ -258,7 +258,7 @@ namespace Translumo.MVVM.ViewModels
                 {
                     MessageBox.Show(LocalizationManager.GetValue("Str.Stages.VideoOcrFailed"));
                 }
-            });
+            }, TaskScheduler.FromCurrentSynchronizationContext());
         }
     }
 }
