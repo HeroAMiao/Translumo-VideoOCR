@@ -272,6 +272,7 @@ namespace Translumo.MVVM.ViewModels
                 }
                 else
                 {
+                    _logger.LogError(t.Exception, $"VideoOcr Failed");
                     MessageBox.Show(LocalizationManager.GetValue("Str.Stages.VideoOcrFailed"));
                 }
             }, TaskScheduler.FromCurrentSynchronizationContext());
