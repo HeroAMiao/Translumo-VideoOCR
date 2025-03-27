@@ -64,6 +64,18 @@ namespace Translumo.MVVM.ViewModels
             set => SetProperty(ref _twoPassOcr, value);
         }
 
+        public bool EasyOcr
+        {
+            get => _easyOcr;
+            set => SetProperty(ref _easyOcr, value);
+        }
+
+        public string EasyOcrModelName
+        {
+            get => _easyOcrModelName;
+            set => SetProperty(ref _easyOcrModelName, value);
+        }
+
         public bool IsProcessing
         {
             get => _isProcessing;
@@ -79,6 +91,8 @@ namespace Translumo.MVVM.ViewModels
         private VideoOcrProgress _progress;
         private bool _isProcessing;
         private bool _twoPassOcr = true;
+        private bool _easyOcr = false;
+        private string _easyOcrModelName;
         private int _interval = 300;
         private int _minFrame = 3;
         private double _changeThreshold = 0.1;
@@ -241,7 +255,9 @@ namespace Translumo.MVVM.ViewModels
                 VideoPath = _path,
                 StableFrameCount = _minFrame,
                 ChangeThreshold = _changeThreshold,
-                TwoPassOcr = _twoPassOcr
+                TwoPassOcr = _twoPassOcr,
+                EasyOcr = _easyOcr,
+                EasyOcrModelName = _easyOcrModelName
             };
             var videoOcrService = _serviceProvider.GetService<IVideoOcrService>();
             var p = new Progress<VideoOcrProgress>(v => Progress = v);

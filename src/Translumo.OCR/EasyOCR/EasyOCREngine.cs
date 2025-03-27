@@ -16,6 +16,7 @@ namespace Translumo.OCR.EasyOCR
         public bool SecondaryPrimaryCheck => false;
         public int Confidence => 9;
         public Languages DetectionLanguage => _languageDescriptor.Language;
+        public string ModelName { get; }
 
         private bool _objectsInitialized;
         private bool _readerIsUsed;
@@ -33,8 +34,10 @@ namespace Translumo.OCR.EasyOCR
         private dynamic _bytes;
         #endregion
 
-        public EasyOCREngine(LanguageDescriptor languageDescriptor, PythonEngineWrapper pythonEngine, ILogger logger)
+        public EasyOCREngine(LanguageDescriptor languageDescriptor, PythonEngineWrapper pythonEngine, ILogger logger,
+            EasyOCRConfiguration ocrConfiguration)
         {
+            ModelName = ocrConfiguration.ModelName;
             _languageDescriptor = languageDescriptor;
             _pythonEngine = pythonEngine;
             _logger = logger;
@@ -89,7 +92,8 @@ namespace Translumo.OCR.EasyOCR
             {
                 _builtinsLib = _pythonEngine.Import("builtins");
                 _easyOcrLib = _pythonEngine.Import("easyocr");
-                _reader = _easyOcrLib.Reader(new[] { _languageDescriptor.EasyOcrCode }, model_storage_directory: _modelPath, download_enabled: false, recog_network: _languageDescriptor.EasyOcrModel);
+                var modelName = string.IsNullOrWhiteSpace(ModelName) ? _languageDescriptor.EasyOcrModel : ModelName;
+                _reader = _easyOcrLib.Reader(new[] { _languageDescriptor.EasyOcrCode }, model_storage_directory: _modelPath, download_enabled: false, recog_network: modelName, user_network_directory: _modelPath);
                 _bytes = _builtinsLib.bytes;
 
                 _objectsInitialized = true;

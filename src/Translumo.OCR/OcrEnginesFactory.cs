@@ -56,7 +56,12 @@ namespace Translumo.OCR
                 if (confType == typeof(EasyOCRConfiguration))
                 {
                     if (!TryRemoveIfDisabled<EasyOCREngine>(ocrConfiguration))
-                        yield return GetEngine(() => new EasyOCREngine(langDescriptor, _pythonEngine, _logger), detectionLanguage);
+                    {
+                        var conf = (EasyOCRConfiguration)ocrConfiguration;
+                        TryRemoveCachedEasyOcrIfModelChanged(conf);
+                        yield return GetEngine(() => new EasyOCREngine(langDescriptor, _pythonEngine, _logger, conf), detectionLanguage);
+                    }
+                        
                 }
             }
 
@@ -71,6 +76,21 @@ namespace Translumo.OCR
                 RemoveCachedEngine<TEngine>();
 
                 return true;
+            }
+
+            void TryRemoveCachedEasyOcrIfModelChanged(EasyOCRConfiguration configuration)
+            {
+                var cachedEngine = _cachedEngines.FirstOrDefault(engine => engine.GetType() == typeof(EasyOCREngine));
+                if (cachedEngine == null)
+                {
+                    return;
+                }
+
+                EasyOCREngine engine = (EasyOCREngine)cachedEngine;
+                if (engine.ModelName != configuration.ModelName)
+                {
+                    RemoveCachedEngine<EasyOCREngine>();
+                }
             }
         }
 

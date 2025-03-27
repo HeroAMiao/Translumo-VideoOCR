@@ -57,14 +57,14 @@ namespace Translumo.Services
         }
 
         private void ReOcrSrtResults(List<SrtEntry> srtEntries, IMultiThreadVideoCaptureService videoCaptureService,
-            int interval, IProgress<VideoOcrProgress> progress)
+            int interval, IProgress<VideoOcrProgress> progress, VideoOcrConfiguration configuration)
         {
             
             var engines = _enginesFactory.GetEngines(new OcrConfiguration[]
             {
-                new TesseractOCRConfiguration{Enabled = true},
+                new TesseractOCRConfiguration{Enabled = !configuration.EasyOcr},
                 new WindowsOCRConfiguration {Enabled = false},
-                new EasyOCRConfiguration {Enabled = false},
+                new EasyOCRConfiguration {Enabled = configuration.EasyOcr, ModelName = configuration.EasyOcrModelName},
             }, _translationConfiguration.TranslateFromLang).ToArray();
             
             for (var i = 0; i < srtEntries.Count; i++)
@@ -140,7 +140,7 @@ namespace Translumo.Services
             var captureService = _videoCaptureServiceFactory.GetService(configuration.VideoPath, configuration.Rectangle);
             if (configuration.TwoPassOcr)
             {
-                ReOcrSrtResults(srtEntries, captureService, configuration.Interval, progress);
+                ReOcrSrtResults(srtEntries, captureService, configuration.Interval, progress, configuration);
             }
             OutputSrt(srtEntries, configuration.VideoPath + ".srt");
         }

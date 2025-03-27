@@ -10,5 +10,7 @@ namespace Translumo.Configuration
         public int StableFrameCount;
         public double ChangeThreshold;
         public bool TwoPassOcr;
+        public bool EasyOcr;
+        public string EasyOcrModelName;
     }
 }

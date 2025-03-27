@@ -5,5 +5,6 @@ namespace Translumo.OCR.EasyOCR
 {
     public class EasyOCRConfiguration : OcrConfiguration
     {
+        public string ModelName;
     }
 }
