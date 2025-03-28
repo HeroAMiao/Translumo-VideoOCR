@@ -10,9 +10,9 @@ using System.Windows;
                                               //(used if a resource is not found in the page,
                                               // app, or any theme specific resource dictionaries)
 )]
-[assembly: AssemblyFileVersion("0.10.0")]
-[assembly: AssemblyInformationalVersion("0.10.0")]
-[assembly: AssemblyVersion("0.10.0")]
+[assembly: AssemblyFileVersion("0.11.0")]
+[assembly: AssemblyInformationalVersion("0.11.0")]
+[assembly: AssemblyVersion("0.11.0")]
 
 [assembly: AssemblyCompany("Translumo")]
 [assembly: AssemblyProduct("Translumo")]
