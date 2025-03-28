@@ -62,7 +62,7 @@ namespace Translumo.Dialog.Stages
                 LocalizationManager.GetValue("Str.Stages.CheckPyModules"))
                 .AddNextFalse(new DialogQuestionInteractionStage(dialogService, LocalizationManager.GetValue("Str.Stages.PyModulesQuestion", true))
                     .AddNextStage(new DialogQuestionInteractionStage(dialogService, LocalizationManager.GetValue("Str.Stages.PyModulesQuestion2", true))
-                        .AddNextStage(new ActionInteractionStage(dialogService, () => PythonProvider.InstallModuleAsync("torch torchvision --index-url https://download.pytorch.org/whl/cu118"), LocalizationManager.GetValue("Str.Stages.InstallationPyModule1"))
+                        .AddNextStage(new ActionInteractionStage(dialogService, () => PythonProvider.InstallModuleAsync("torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu118"), LocalizationManager.GetValue("Str.Stages.InstallationPyModule1"))
                             .AddException(new ExceptionInteractionStage(dialogService, (ex) => logger.LogError(ex, "PyTorch installation error"), "{0}"))
                             .AddNextStage(new ActionInteractionStage(dialogService, () => PythonProvider.InstallModuleAsync($"easyocr=={EASYOCR_VERSION}"), LocalizationManager.GetValue("Str.Stages.InstallationPyModule2"))
                                 .AddException(new ExceptionInteractionStage(dialogService, (ex) => logger.LogError(ex, "EasyOCR installation error"), "{0}"))
